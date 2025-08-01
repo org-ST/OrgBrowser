@@ -9,7 +9,7 @@ find_package(Qt5 REQUIRED COMPONENTS
             )
 
 add_executable(Browser
-    Main.cpp
+    src/Main.cpp
 )
 
 target_link_libraries( Browser PRIVATE
