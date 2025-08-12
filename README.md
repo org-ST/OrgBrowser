@@ -21,4 +21,4 @@ The following files are included under this license. Their names, as listed by G
 - resources/relo.png — “Refresh” 
 
 __NewTab Page__  
-Thank you to [MakiDevelops](https://github.com/MakiDevelops), for the New Tab page  
+Thank you to [MakiDevelops](https://github.com/MakiDevelops), for the New Tab page design  
