@@ -10,6 +10,7 @@
 #include <QtWidgets/QApplication>
 #include <QtWebEngineWidgets/QWebEngineView>
 #include <QtWebEngineWidgets/QWebEngineProfile>
+#include <QtWebEngineCore/QWebEngineUrlRequestInterceptor>
 #include <QtWidgets/QWidget>
 #include <QtWidgets/QVBoxLayout>
 #include <QtWidgets/QLineEdit>
@@ -18,6 +19,7 @@
 #include <QtWidgets/QToolButton>
 #include <stdlib.h>
 #include <QtCore/QString>
+#include <QtCore/QDir>
 #include <filesystem>
 #include <regex>
 
@@ -25,11 +27,21 @@
 #define BACKIMG "resources/back.png"
 #define FORWIMG "resources/forw.png"
 #define RELOIMG "resources/relo.png"
+#define NEWTABPAGE "/resources/index.html"
 #else 
 #define BACKIMG "../Resources/back.png"
 #define FORWIMG "../Resources/forw.png"
 #define RELOIMG "../Resources/relo.png"
+#define NEWTABPAGE "/../Resources/index.html"
 #endif
+
+class MyInterceptor : public QWebEngineUrlRequestInterceptor
+{
+public:
+    void interceptRequest(QWebEngineUrlRequestInfo &info) override {
+        info.setHttpHeader("User-Agent", "Mozilla/5.0 (Fuck u trackers) (KHTML, like Gecko) theBrowser/1.0");
+    }
+};
 
 bool endsWithTLD(const std::string& text) {
     std::regex tldRegex(R"(\.[a-z]{2,}$)", std::regex::icase);
@@ -38,6 +50,8 @@ bool endsWithTLD(const std::string& text) {
 
 int main(int argc, char* argv[]){
     qDebug() << "Initializing QApplication";
+
+    QString cwd = QDir::currentPath();
 
     QApplication app(argc, argv);
     QWidget window;
@@ -102,25 +116,32 @@ int main(int argc, char* argv[]){
     // Create web view
     qDebug() << "Making Web View";
     QWebEngineView* view = new QWebEngineView();
+    MyInterceptor *interceptor = new MyInterceptor;
+
+    view->page()->profile()->setRequestInterceptor(interceptor);
+
     QWebEnginePage* page = new QWebEnginePage(profile, view);
     view->setPage(page);
     view->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     layout->addWidget(view, 1);
 
     // Load initial page
-    view->load(QUrl("https://google.com/"));
+    view->load(QUrl().fromLocalFile(cwd + NEWTABPAGE));
 
     // When user presses Enter in the search bar
     qDebug() << "Connecting Buttons";
     QObject::connect(searchBar, &QLineEdit::returnPressed, [&]() {
-        QString urlText = searchBar->text();
-        if (!endsWithTLD(urlText.toStdString())){
-            urlText = "https://google.com/search?q=" + urlText;
+        if (searchBar->text() != "org:newtab"){
+            QString urlText = searchBar->text();
+            if (!endsWithTLD(urlText.toStdString())){
+                urlText = "https://google.com/search?q=" + urlText;
+            }
+            if (!urlText.startsWith("http"))
+                urlText = "https://" + urlText;
+            view->load(QUrl(urlText));
+        } else {
+            view->load(QUrl().fromLocalFile(cwd + NEWTABPAGE));
         }
-        if (!urlText.startsWith("http"))
-            urlText = "https://" + urlText;
-        
-        view->load(QUrl(urlText));
     });
     QObject::connect(backbutton, &QToolButton::pressed, [&](){
         view->back();
@@ -135,7 +156,7 @@ int main(int argc, char* argv[]){
     // Show everything
     qDebug() << "Starting Window";
     window.setWindowTitle("OrgBrowser");
-    window.resize(1000, 700);
+    window.resize(1280, 720);
     window.show();
 
     qDebug() << "Returning";
